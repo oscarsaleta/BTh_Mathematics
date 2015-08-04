@@ -1,9 +1,10 @@
+#include <stdio.h>
 #include <math.h>
 #include "gss.h"
 #define MAXIT 100000
 #define PHI 0.61803398875 //0.5*(-1+sqrt(5.))
 
-inline double SIGN (const double &a, const double &b) {
+inline double SIGN (const double a, const double b) {
     return ( b>=0 ? (a >= 0 ? a : -a) : (a >= 0 ? -a : a) );
 }
 
@@ -50,7 +51,7 @@ int gss (double *a, double *b, int N, double *data, double (*f)(int N, double *d
  * per aïllar el mínim de f, i el retorna en la variable min
  * Source: Numerical Recipes
  */
-double brent (double ax, double bx, double cx, double (*f)(int N, double *data, double sigma), double tol, double *min) {
+double brent (double ax, double bx, double cx, int N, double *data, double (*f)(int N, double *data, double sigma), double tol, double *min) {
     int i;
     double a,b,d;
     double p,q,r;
@@ -64,7 +65,7 @@ double brent (double ax, double bx, double cx, double (*f)(int N, double *data, 
     a=(ax<cx ? ax : cx);
     b=(ax>cx ? ax : cx);
     x=v=w=bx;
-    fx=fv=fw=f(x);
+    fx=fv=fw=f(N,data,x);
 
     for (i=0; i<MAXIT; i++) {
         xm = 0.5*(a+b);
@@ -73,7 +74,7 @@ double brent (double ax, double bx, double cx, double (*f)(int N, double *data, 
 
         /* Test per veure si hem acabat */
         if ( fabs(x-xm) <= tol2-0.5*(b-a) ) {
-            *xmin = x;
+            *min = x;
             return fx;
         }
 
@@ -101,7 +102,7 @@ double brent (double ax, double bx, double cx, double (*f)(int N, double *data, 
             d=(1-PHI)*e;
         }
         u=(fabs(d) >= tol1 ? x+d : x+SIGN(tol1,d));
-        fu=f(u);
+        fu=f(N,data,u);
         if (fu <= fx) {
             if (u >= x)
                 a=x;
@@ -126,6 +127,6 @@ double brent (double ax, double bx, double cx, double (*f)(int N, double *data, 
         }
     }
     fprintf(stderr,"brent:: Massa iteracions\n");
-    *xmin=x;
+    *min=x;
     return fx;
 }
