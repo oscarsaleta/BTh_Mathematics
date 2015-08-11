@@ -8,7 +8,7 @@ all : test testMLE
 # Utilitats:
 # - Test polinomi
 test : test.c gss.o gss.h eGDP.o eGDP.h
-	gcc -o test $(OPT) test.c gss.o eGDP.h -lm
+	gcc -o test $(OPT) test.c gss.o eGDP.o -lm
 # - Test MLE
 testMLE : testMLE.c gss.o gss.h eGDP.o eGDP.h
 	gcc -o testMLE $(OPT) testMLE.c gss.o eGDP.o -lm
