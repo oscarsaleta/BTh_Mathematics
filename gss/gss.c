@@ -1,132 +1,116 @@
-#include <stdio.h>
 #include <math.h>
 #include "gss.h"
-#define MAXIT 100000
-#define PHI 0.61803398875 //0.5*(-1+sqrt(5.))
 
-inline double SIGN (const double a, const double b) {
-    return ( b>=0 ? (a >= 0 ? a : -a) : (a >= 0 ? -a : a) );
-}
+double fmin_brent(double ax, double bx, int N, double *data, double (*f)(int N, double *data, double sigma), double tol) {
+    double a,b,c,d,e,eps,xm,p,q,r,tol1,tol2,u,v,w;
+    double fu,fv,fw,fx,x;
 
-int gss (double *a, double *b, int N, double *data, double (*f)(int N, double *data, double x), double tol, double *result) {
-    double aa=*a,bb=*b,c,d;
-    double fc, fd;
-    double err;
-    int i;
-    err = fabs(*b-*a);
-    c=bb+PHI*(aa-bb);
-    d=aa+PHI*(bb-aa);
-    fc=(*f)(N,data,c);
-    fd=(*f)(N,data,d);
-    for (i=0; i<MAXIT; i++) {
-        if (fc<fd) {
-            bb=d;
-            //fb=fd;
-            d=c;
-            fd=fc;
-            c=bb+PHI*(aa-bb);
-            fc=(*f)(N,data,c);
-        } else {
-            aa=c;
-            //fa=fc;
-            c=d;
-            fc=fd;
-            d=aa+PHI*(bb-aa);
-            fd=(*f)(N,data,d);
-        }
-        err = fabs(bb-aa);
-        if (err < tol) {
-            *a=aa;
-            *b=bb;
-            *result = (aa+bb)/2.;
-            return 0;
-        }
-    }
-    return 1;
-}
+    // 1/sqrt(golden ratio)
+    c = 0.5*(3.-sqrt(5.));
 
+    // sqrt de la precisio de maquina
+    eps = machinePrec();
 
-#define SHFT(a,b,c,d) (a)=(b);(b)=(c);(c)=(d);
-/* Donada f i un triplet ax<bx<cx i f(bx)<f(ax), f(bx)<f(cx), aquesta funció usa el mètode de Brent (gss+parabolic)
- * per aïllar el mínim de f, i el retorna en la variable min
- * Source: Numerical Recipes
- */
-double brent (double ax, double bx, double cx, int N, double *data, double (*f)(int N, double *data, double sigma), double tol, double *min) {
-    int i;
-    double a,b,d;
-    double p,q,r;
-    double tol1,tol2;
-    double u,v,w,x;
-    double fu,fv,fw,fx;
-    double xm;
-    double etemp,e=0.0; // distància moguda en el penúltim pas
+    // inicialitzacio
+    a = ax;
+    b = bx;
+    v = a + c*(b-a);
+    w = v;
+    x = v;
+    e = 0.;
+    fx = f(N,data,x);
+    fv = fx;
+    fw = fx;
 
-    /* Construim l'interval (a,b)*/
-    a=(ax<cx ? ax : cx);
-    b=(ax>cx ? ax : cx);
-    x=v=w=bx;
-    fx=fv=fw=f(N,data,x);
+    // bucle principal
+    while (fabs(x-xm) < (tol2-0.5*(b-a))) {
 
-    for (i=0; i<MAXIT; i++) {
         xm = 0.5*(a+b);
-        tol1 = tol*fabs(x)+1e-10;
-        tol2 = 2*tol1;
-
-        /* Test per veure si hem acabat */
-        if ( fabs(x-xm) <= tol2-0.5*(b-a) ) {
-            *min = x;
-            return fx;
-        }
-
-        /* Intentem un ajust parabòlic */
-        if ( fabs(e) > tol1) {
-            r = (x-w)*(fx-fw);
-            q=(x-v)*(fx-fw);
-            p=(x-v)*q-(x-w)*r;
-            q=2.0*(q-r);
-            if (q > 0.0)
+        tol1 = eps*fabs(x)+tol/3.;
+        tol2 = 2.*tol1;
+        
+        // mirar si fem gss o spi
+        if (fabs(e) > tol1) {
+            // fem spi
+            r = (x-w)*(fx-fv);
+            q = (x-v)*(fx-fw);
+            p = (x-v)*q-(x-w)*r;
+            q = 2.*(q-r);
+            if (q > 0.)
                 p = -p;
-            q=fabs(q);
-            etemp=e;
-            e=d;
-            if (fabs(p) >= fabs(0.5*q*etemp) || p <= q*(a-x) || p >= q*(b-x)) {
-                e = (x >= xm ? a-x : b-x);
-                d=(1-PHI)*e;
-            } else {
-                d=p/q;u=x+d;
-                if (u-a < tol2 || b-u < tol2)
-                    d=SIGN(tol1,xm-x);
-            }
+            else // collita propia
+                q = fabs(q);
+            r = e;
+            e = d;
+        } else if (fabs(p) < fabs(0.5*q*r)
+                    || p < q*(a-x)
+                    || p < q*(b-x)) {
+            // parabolic interpolation step
+            d = p/q;
+            u = x+d;
+            // no avaluar f massa a prop de ax o bx
+            if ((u-a) < tol2 || (b-u) < tol2)
+                d = dsign(tol1,xm-x);
         } else {
-            e = (x >= xm ? a-x : b-x);
-            d=(1-PHI)*e;
+            // golden section step
+            if (x >= xm)
+                e = a-x;
+            else
+                e = b-x;
+            d = c*e;
         }
-        u=(fabs(d) >= tol1 ? x+d : x+SIGN(tol1,d));
-        fu=f(N,data,u);
+
+        // no avaluar f massa a prop de x
+        if (fabs(d) >= tol1)
+            u = x+d;
+        else
+            u = x+dsign(tol1,d);
+        fu = f(N,data,u);
+
+        // actualitzar a, b, v, w i x
         if (fu <= fx) {
-            if (u >= x)
-                a=x;
-            else 
-                b=x;
-            SHFT(v,w,x,u);
-            SHFT(fv,fw,fx,fu);
+            if (u < x)
+                b = x;
+            else
+                a = x;
+            v = w;
+            fv = fw;
+            w = x;
+            fw = fx;
+            x = u;
+            fx = fu;
         } else {
             if (u < x)
-                a=u;
+                a = u;
             else
-                b=u;
-            if (fu <= fw || w == x) {
-                v=w;
-                w=u;
-                fv=fw;
-                fw=fu;
+                b = u;
+            if (fu < fw || w == x) {
+                v = w;
+                fv = fw;
+                w = u;
+                fw = fu;
             } else if (fu <= fv || v == x || v == w) {
-                v=u;
-                fv=fu;
+                v = u;
+                fv = fu;
+            } else {
             }
         }
     }
-    fprintf(stderr,"brent:: Massa iteracions\n");
-    *min=x;
-    return fx;
+    // fi del bucle principal
+    return x;
+}
+
+double machinePrec() {
+    double eps,tol1;
+    eps = 1.;
+    tol1=1.+eps;
+    while (tol1 > 1.) {
+        eps /= 2.;
+        tol1 = 1.+eps;
+    }
+    return sqrt(eps);
+}
+
+double dsign(double a, double b) {
+    return (b >= 0 ? fabs(a) : -fabs(a));
 }

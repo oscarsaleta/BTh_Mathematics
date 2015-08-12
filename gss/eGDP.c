@@ -13,9 +13,10 @@ int eGDP (int N, double *x, double *k, double *psi, double tol) {
             max = x[i];
     }
     max=100*max;
-    min=-100*min;
+    min=-max;
 
-    gss(&min,&max,N,x,fp,tol,&optSigma);
+    optSigma = fmin_brent(min,max,N,x,fp,tol);
+    //gss(&min,&max,N,x,fp,tol,&optSigma);
 
     *k = fk(N,x,optSigma);
     *psi = fk(N,x,optSigma)*optSigma; 
@@ -33,5 +34,5 @@ double fk (int N, double *x, double sigma) {
 }
 
 double fp (int N, double *x, double sigma) {
-    return N*(-log(fk(N,x,sigma)*sigma)+fk(N,x,sigma)-1);
+    return N*(log(fk(N,x,sigma)*sigma)-fk(N,x,sigma)+1);
 }
