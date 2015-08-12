@@ -18,6 +18,7 @@ double fmin_brent(double ax, double bx, int N, double *data, double (*f)(int N, 
     w = v;
     x = v;
     e = 0.;
+    d = 0.;
     fx = f(N,data,x);
     fv = fx;
     fw = fx;
@@ -43,7 +44,7 @@ double fmin_brent(double ax, double bx, int N, double *data, double (*f)(int N, 
             r = e;
             e = d;
         } else if (fabs(p) < fabs(0.5*q*r)
-                    || p < q*(a-x)
+                    || p > q*(a-x)
                     || p < q*(b-x)) {
             // parabolic interpolation step
             d = p/q;
