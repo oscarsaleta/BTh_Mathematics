@@ -1,27 +1,35 @@
-library("evir")
+source("/home/slenderman/git/tdg-mates/R/MLE/[34]eGPD.R")
 
 # Llegir dades
-g=read.table("/home/slenderman/git/tdg-mates/R/Power law/g-terrorism.txt")$V1
-#metode1
-P=ecdf(g)
-data=P(g)
-plot(data~g,log="yx")
-#metode2
-g.freqs=as.data.frame(table(g))
-g.freqs$Relative=as.numeric(prop.table(table(g)))
-g.freqs$g=as.numeric(g.freqs$g)
-plot(Relative~g,data=g.freqs,log="xy")
-#metode3
-data2=1+1e-4-P(g)
-plot(data2~g,log="xy")
+x=read.table("/home/slenderman/git/tdg-mates/R/Power law/g-terrorism.txt")$V1;
 
-hist(g,probability = TRUE,breaks="FD")
-lines(density(g))
-plot(density(g),log="xy")
+##metode1
+#P=ecdf(x)
+#data=P(x)
+#plot(data~x,log="yx")
+##metode2
+#x.freqs=as.data.frame(table(x))
+#x.freqs$Relative=as.numeric(prop.table(table(x)))
+#x.freqs$g=as.numeric(x.freqs$x)
+#plot(Relative~x,data=x.freqs,log="xy")
+##metode3
+#P=ecdf(x)
+#data=1+1e-4-P(x)
+#plot(data~x,log="xy")
 
-# Triem xmin
-jmin=1
-xmin=data[jmin]
-# Tallem les dades
-data.cut=data[data>xmin]
-data.cut
+
+for(j in 1:5) {
+  # Triem xmin
+  #xm=data[j];
+  xm=x[j];
+  # Tallem les dades
+  #data.cut=data[-j];
+  remove=c(seq(1,j));
+  x.cut=x[-remove];
+  # Recoloquem
+  #data.cut=data.cut-data.cut[1];
+  x.cut=x.cut-x.cut[1];
+  #eGPD(data.cut);
+  print(c(j,xm,eGPD(x.cut)))
+  plot()
+}

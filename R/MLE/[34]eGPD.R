@@ -1,6 +1,11 @@
 library(stats);
 library(evir);
 
+# CDF of the GDP
+FGPD=function(x,k,psi){
+  return(1-(1-k*x/psi)^(1/k))
+}
+
 #to estimate the maximum likelihood (MLE) of a sample x by GPD(k,psi)
 eGPD=function(x){
   fk=function(sigma)
@@ -12,7 +17,17 @@ eGPD=function(x){
   list(k=fk(sigma),psi=fk(sigma)*sigma)
 }
 
-r=rgpd(n = 10000, xi = 0.5, beta = 1);
-write(r,file="/home/slenderman/UniversitatDB/TFG Mates/gss/dades.dat",ncolumns = 1,sep=" ");
-eGPD(r)
-warnings()
+# Cramer-von Mises statistic W²
+W2f=function(z){
+  n=length(z);
+  v=(z-(2*seq(1,n))/(2*n))^2;
+  return(W2=sum(v)+1/(12*n))
+}
+
+# Anderson-Darling statistic A²
+A2f=function(z){
+  n=length(z);
+  zz=sort(z,decreasing = TRUE);
+  v=(2*seq(1,n)-1)*(log(z)+log(1-zz));
+  return(A2=-n-mean(v))
+}
