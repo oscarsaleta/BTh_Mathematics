@@ -1,35 +1,43 @@
-source("/home/slenderman/git/tdg-mates/R/MLE/[34]eGPD.R")
+library(gPdtest)
+source("MLE/[34]eGPD.R")
 
 # Llegir dades
-x=read.table("/home/slenderman/git/tdg-mates/R/Power law/g-terrorism.txt")$V1;
+x=read.table("Power law/g-terrorism.txt")$V1;
+x=sort(x);
+np=as.integer(length(x)/6)
 
-##metode1
-#P=ecdf(x)
-#data=P(x)
-#plot(data~x,log="yx")
-##metode2
-#x.freqs=as.data.frame(table(x))
-#x.freqs$Relative=as.numeric(prop.table(table(x)))
-#x.freqs$g=as.numeric(x.freqs$x)
-#plot(Relative~x,data=x.freqs,log="xy")
-##metode3
-#P=ecdf(x)
-#data=1+1e-4-P(x)
-#plot(data~x,log="xy")
-
-
-for(j in 1:5) {
-  # Triem xmin
-  #xm=data[j];
-  xm=x[j];
-  # Tallem les dades
-  #data.cut=data[-j];
-  remove=c(seq(1,j));
-  x.cut=x[-remove];
-  # Recoloquem
-  #data.cut=data.cut-data.cut[1];
-  x.cut=x.cut-x.cut[1];
-  #eGPD(data.cut);
-  print(c(j,xm,eGPD(x.cut)))
-  plot()
+# Triar xmin
+kpos=vector(mode="numeric",length=length(x));
+kneg=vector(mode="numeric",length=length(x));
+x.indexes=seq(1,length(x),length.out = 3)
+for (i in x.indexes) {
+  xmin=x[i];
+  x.excess=x[x>xmin]-xmin;
+  if (length(x.excess)==0) break;
+  test=gpd.test(x.excess);
+  kpos[i]=test$p.values[1];
+  kneg[i]=test$p.values[2];
+  print(round(kpos[i],digits=10))
+  print(kneg[i])
 }
+if (max(kpos)<max(kneg)) {
+  xmin=x[which.max(kneg)]
+} else {
+  xmin=x[which.max(kpos)]
+}
+
+# Fer fit
+x.excess=x[x>xmin]-xmin;
+fit=eGPD(x.excess);
+
+# Fer plot
+x.ecdf=1-ecdf(x.excess)(x.excess)
+x.fgpd=1-FGPD(x.excess,fit$k,fit$psi)
+x.pl=1-PL(x,xmin,alpha)
+# pdf("g-PLvsGPD.pdf",width=10,height=8)
+plot(x.excess+xmin,x.ecdf,log="xy",xlab="Severitat d'atacs terroristes (morts)",ylab="CDF dades",
+     panel.first=grid(equilogs=FALSE))
+lines(x.excess+xmin,x.fgpd,col="red")
+lines(x,x.pl,col="blue")
+legend("topright",c("Power-Law","GPD"),col=c("blue","red"),lty=c(1,1),inset = 0.02)
+# dev.off()

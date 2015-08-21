@@ -1,5 +1,6 @@
 library(gPdtest);
 library(evir);
+library(hydroGOF)
 source("[34]eGPD.R");
 source("tictoc.R");
 
@@ -41,6 +42,7 @@ for (i in 1:NSIM) {
   vK[i]=mean(avK);
   cPsi[i]=mean(acPsi);
   cK[i]=mean(acK);
+
 }
 
 par(las=1,mar=c(5.1,4.1,2.1,2.1))
@@ -69,6 +71,23 @@ grid()
 lines(oK,cKb,col="red")
 legend("topleft",inset=0.02,c("MLE","AMLE"),col=c("red","green"),lty=c(1,1))
 dev.off()
+
+# #plot MSE kappa
+# ckMSE=vector(mode="numeric",length=NSIM);
+# vkMSE=vector(mode="numeric",length=NSIM);
+# for (i in 1:NSIM) {
+#   od=rgpd(n=1000,xi=-oK[i]);
+#   cd=rgpd(n=1000,xi=-cK[i]);
+#   vd=rgpd(n=1000,xi=-vK[i]);
+#   ckMSE[i]=mse(sort(od),sort(cd));
+#   vkMSE[i]=mse(sort(od),sort(vd));
+# }
+# ymin=min(ckMSE,vkMSE);
+# ymax=max(ckMSE,vkMSE);
+# plot(oK,ckMSE,type="l",col="red",xlab=expression(kappa ~ Simulació),ylab=expression("MSE de" ~ kappa),
+#      ylim=c(ymin,500),panel.first=grid())
+# lines(oK,vkMSE,col="green")
+# legend("topleft",inset=0.02,c("MLE","AMLE"),col=c("red","green"),lty=c(1,1))
 
 #plot psi
 pdf(file="vPsi-cPsi.pdf",width=10,heigh=8)
