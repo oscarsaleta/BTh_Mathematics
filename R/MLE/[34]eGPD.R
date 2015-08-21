@@ -6,6 +6,11 @@ FGPD=function(x,k,psi){
   return(1-(1-k*x/psi)^(1/k))
 }
 
+#CDF of the Power-Law
+PL=function(x,xm,a){
+  return(1-(x/xm)^(1-a))
+}
+
 #to estimate the maximum likelihood (MLE) of a sample x by GPD(k,psi)
 eGPD=function(x){
   fk=function(sigma)
