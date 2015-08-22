@@ -1,10 +1,11 @@
+library(gPdtest)
 source("MLE/[34]eGPD.R");
 
 x=read.table("Power law/k-blackouts.txt")$V1;
 
 kpos=vector(mode="numeric",length=length(x));
 kneg=vector(mode="numeric",length=length(x));
-for (i in seq(1,length(x),length.out = 6)) {
+for (i in seq(1,length(x),length.out=10)) {
   xmin=x[i];
   x.excess=x[x>xmin]-xmin;
   test=gpd.test(x.excess);
