@@ -1,6 +1,7 @@
 library(stats);
 library(evir);
 library(gPdtest);
+library(goftest);
 
 # CDF of the GDP
 FGPD = function(x,k,psi) {
@@ -88,19 +89,24 @@ gpd.xmin = function(x) {
     if (length(x.excess) == 0)
       break;
     fit = eGPD(x.excess);
-    ks[i] = KSf(seq(min(x),max(x),by=0.1),fit$k,fit$psi);
-    z = FGPD(seq(min(x),max(x),by=0.1),fit$k,fit$psi)
-    ws[i] = W2f(z);
-    # ws[i]=W2ff(x,fit$k,fit$psi);
+    ks[i] = KSf(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
+    # z = FGPD(seq(min(x),max(x),by = 0.1),fit$k,fit$psi)
+    # ws[i] = W2f(z);
+    #     print(c(x[i],ws[i],critic))
+    #     if (ws[i]>critic) {
+    #       return(ws[i]);
+    #     }
+    
+    ws[i] = W2ff(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
     # ws[i] = W2i(x.excess,fit$k,fit$psi);
-    as[i] = A2f(z);
-    # as[i] = A2ff(x,fit$k,fit$psi);
+    # as[i] = A2f(z);
+    as[i] = A2ff(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
     xprev = xmin;
   }
   wi = which.min(ws);
-  # xmin=x[which.min(ws)];
+  xmin = x[which.min(ws)];
   ai = which.min(as);
-  # xmin=x[which.min(as)];
+  xmin = x[which.min(as)];
   ki = which.min(ks);
   result = c(ki,wi,ai);
   return(result)
@@ -135,9 +141,86 @@ gpd.xmin.v = function(x,J = 999) {
     kneg[i] = test$p.values[2];
   }
   if (max(kpos,na.rm = TRUE) < max(kneg,na.rm = TRUE)) {
-    return(x[which.max(kneg)]);
+    return(which.max(kneg));
   } else {
-    return(x[which.max(kpos)]);
+    return(which.max(kpos));
   }
   
 }
+
+# GOF test usant Kolmogorov-Smirnov
+ks.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1) {
+  x.ecdf = ecdf(x);
+  xmin=m;
+  maxloop=as.integer((M-m)/dx);
+  for (i in 1:maxloop) {
+    x.e = x[x > xmin] - xmin;
+    fit = eGPD(x.e);
+    # x.ecdf=ecdf(x.e);
+    pval = 0;
+    for (j in 1:100) {
+      data = sort(rgpd(length(x),xi = -fit$k,beta = fit$psi));
+      test = ks.test(data,x.ecdf);
+      pval = pval + test$p.value;
+    }
+    pval =  pval / 100;
+    print(c(xmin,pval))
+    if (pval > p) {
+      return(xmin);
+    }
+    xmin=xmin+dx;
+  }
+  return(-1);
+}
+
+# GOF test usant Cramer von Mises
+cvm.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1) {
+  x.ecdf = ecdf(x);
+  xmin=m;
+  maxloop=as.integer((M-m)/dx);
+  for (i in 1:maxloop) {
+    x.e = x[x > xmin] - xmin;
+    fit = eGPD(x.e);
+    # x.ecdf=ecdf(x.e);
+    pval = 0;
+    for (j in 1:100) {
+      data = rgpd(length(x),xi = -fit$k,beta = fit$psi);
+      test = cvm.test(data,null = x.ecdf);
+      pval = pval + test$p.value;
+    }
+    pval =  pval / 100;
+    print(c(xmin,pval))
+    if (pval > p) {
+      return(xmin);
+    }
+    xmin=xmin+dx;
+  }
+  return(-1);
+}
+
+# GOF test usant Anderson Darling
+ad.xmin = function(x,m = x[1],M = x[length(x)],dx = 1,p = 0.1) {
+  x.ecdf = ecdf(x);
+  xmin=m;
+  maxloop=as.integer((M-m)/dx);
+  for (i in 1:(length(x))) {
+    x.e = x[x > xmin] - xmin;
+    fit = eGPD(x.e);
+    pval = 0;
+    for (j in 1:100) {
+      data = rgpd(length(x),xi = -fit$k,beta = fit$psi);
+      test = ad.test(data,null = x.ecdf);
+      print(test$p.value)
+      pval = pval + test$p.value;
+    }
+    pval = pval / 100;
+    # print(c(xmin,pval))
+    if (pval > p) {
+      return(xmin);
+    }
+    xmin=xmin+dx;
+  }
+  return(-1);
+}
+
+

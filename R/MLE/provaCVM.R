@@ -24,7 +24,7 @@ for(i in 1:(length(x)-1)) {
   pval=0;
   om=0;
   for (j in 1:100) {
-    data=rgpd(1000,fit$k,fit$psi);
+    data=rgpd(length(x),xi=fit$k,beta=fit$psi);
     test=cvm.test(data,null=x.ecdf);
     pval=pval+test$p.value;
     om=om+test$statistic[["omega2"]];

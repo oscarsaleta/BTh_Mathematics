@@ -1,8 +1,8 @@
 library(gPdtest);
 library(evir);
 library(hydroGOF)
-source("[34]eGPD.R");
-source("tictoc.R");
+source("MLE/[34]eGPD.R");
+source("MLE/tictoc.R");
 
 tic();
 
