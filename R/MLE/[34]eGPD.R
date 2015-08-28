@@ -70,46 +70,12 @@ KSf = function(x,k,psi) {
 }
 
 # Algorithm for finding xmin
-gpd.xmin = function(x) {
-  # usem CM i AD de Choulakian-Stephens
-  ws = vector(mode = "numeric",length = length(x) - 1);
-  as = vector(mode = "numeric",length = length(x) - 1);
-  ks = vector(mode = "numeric",length = length(x) - 1);
-  xprev = 0;
-  for (i in 1:(length(x) - 1)) {
-    xmin = x[i];
-    if (xmin == xprev) {
-      ks[i] = ks[i - 1];
-      ws[i] = ws[i - 1];
-      as[i] = as[i - 1];
-      next;
-    }
-    # print(i)
-    x.excess = x[x > xmin] - xmin;
-    if (length(x.excess) == 0)
-      break;
-    fit = eGPD(x.excess);
-    ks[i] = KSf(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
-    # z = FGPD(seq(min(x),max(x),by = 0.1),fit$k,fit$psi)
-    # ws[i] = W2f(z);
-    #     print(c(x[i],ws[i],critic))
-    #     if (ws[i]>critic) {
-    #       return(ws[i]);
-    #     }
-    
-    ws[i] = W2ff(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
-    # ws[i] = W2i(x.excess,fit$k,fit$psi);
-    # as[i] = A2f(z);
-    as[i] = A2ff(seq(xmin,max(x),by = 0.1),fit$k,fit$psi);
-    xprev = xmin;
-  }
-  wi = which.min(ws);
-  xmin = x[which.min(ws)];
-  ai = which.min(as);
-  xmin = x[which.min(as)];
-  ki = which.min(ks);
-  result = c(ki,wi,ai);
-  return(result)
+gpd.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1) {
+  # usem KS, CM i AD
+  ks = ks.xmin(x,m,M,dx,p);
+  cvm = cvm.xmin(x,m,M,dx,p);
+  ad = ad.xmin(x,m,M,dx,p);
+  return(c(ks,cvm,ad))
 }
 
 # ymin = min(c(ks,ws,as),na.rm = TRUE)
@@ -148,79 +114,88 @@ gpd.xmin.v = function(x,J = 999) {
   
 }
 
-# GOF test usant Kolmogorov-Smirnov
-ks.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1) {
+# Trobar llindar usant KS/CvM/AD
+gpd.findthresh = function(x, method = "CvM",m = x[1], M = x[length(x)], dx = x[1],p = 0.1,nsim = 100) {
   x.ecdf = ecdf(x);
-  xmin=m;
-  maxloop=as.integer((M-m)/dx);
+  xmin = m;
+  maxloop = as.integer((M - m) / dx);
   for (i in 1:maxloop) {
     x.e = x[x > xmin] - xmin;
     fit = eGPD(x.e);
-    # x.ecdf=ecdf(x.e);
+    x.ecdf = ecdf(x.e);
     pval = 0;
-    for (j in 1:100) {
-      data = sort(rgpd(length(x),xi = -fit$k,beta = fit$psi));
-      test = ks.test(data,x.ecdf);
+    for (j in 1:nsim) {
+      data = rgpd(length(x.e),xi = -fit$k,beta = fit$psi);
+      if (method == "KS") {
+        test = ks.test(data,x.ecdf);
+      } else if (method == "CvM") {
+        test = cvm.test(data,x.ecdf);
+      } else if (method == "AD") {
+        test = ad.test(data,x.ecdf);
+      } else {
+        stop("Mètode no vàlid.")
+      }
       pval = pval + test$p.value;
     }
-    pval =  pval / 100;
-    print(c(xmin,pval))
+    pval =  pval / nsim;
     if (pval > p) {
       return(xmin);
     }
-    xmin=xmin+dx;
+    xmin = xmin + dx;
   }
-  return(-1);
+  stop("No s'ha trobat un llindar adient");
 }
 
 # GOF test usant Cramer von Mises
-cvm.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1) {
-  x.ecdf = ecdf(x);
-  xmin=m;
-  maxloop=as.integer((M-m)/dx);
+cvm.xmin = function(x, m = x[1], M = x[length(x)], dx = 1,p = 0.1,nsim = 100) {
+  # x.ecdf = ecdf(x);
+  xmin = m;
+  maxloop = as.integer((M - m) / dx);
   for (i in 1:maxloop) {
     x.e = x[x > xmin] - xmin;
     fit = eGPD(x.e);
-    # x.ecdf=ecdf(x.e);
+    x.ecdf = ecdf(x.e);
     pval = 0;
-    for (j in 1:100) {
-      data = rgpd(length(x),xi = -fit$k,beta = fit$psi);
+    for (j in 1:nsim) {
+      data = rgpd(length(x.e),xi = -fit$k,beta = fit$psi);
       test = cvm.test(data,null = x.ecdf);
       pval = pval + test$p.value;
     }
-    pval =  pval / 100;
-    print(c(xmin,pval))
+    pval =  pval / nsim;
     if (pval > p) {
       return(xmin);
     }
-    xmin=xmin+dx;
+    xmin = xmin + dx;
   }
-  return(-1);
+  stop("No s'ha trobat un llindar adient");
 }
 
 # GOF test usant Anderson Darling
-ad.xmin = function(x,m = x[1],M = x[length(x)],dx = 1,p = 0.1) {
+ad.xmin = function(x,m = x[1],M = x[length(x)],dx = 1,p = 0.1,nsim = 100) {
   x.ecdf = ecdf(x);
-  xmin=m;
-  maxloop=as.integer((M-m)/dx);
+  xmin = m;
+  maxloop = as.integer((M - m) / dx);
   for (i in 1:(length(x))) {
     x.e = x[x > xmin] - xmin;
     fit = eGPD(x.e);
+    x.ecdf = ecdf(x.e);
     pval = 0;
-    for (j in 1:100) {
-      data = rgpd(length(x),xi = -fit$k,beta = fit$psi);
+    for (j in 1:nsim) {
+      data = rgpd(length(x.e),xi = -fit$k,beta = fit$psi);
       test = ad.test(data,null = x.ecdf);
-      print(test$p.value)
       pval = pval + test$p.value;
     }
-    pval = pval / 100;
-    # print(c(xmin,pval))
+    pval = pval / nsim;
     if (pval > p) {
       return(xmin);
     }
-    xmin=xmin+dx;
+    xmin = xmin + dx;
   }
-  return(-1);
+  stop("No s'ha trobat un llindar adient");
 }
+
+
+
+
 
 

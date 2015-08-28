@@ -6,17 +6,17 @@ eGPD(x[x > xmin] - xmin)
 
 pdf("a-GPD7.pdf",width = 10,height = 7)
 tailplot(out,col = "red",labels = FALSE)
-mtext(side = 1,text = "Freq. paraules (escala log)",line = 2.5)
+mtext(side = 1,text = "Freq\u{FC}\u{E8}ncia paraules Moby Dick",line = 2.5)
 mtext(side = 2,text = "1-F(x) (escala log)",line = 2.3)
 legend("topright",c("Ajust GPD"),lty = 1,inset = 0.01)
 dev.off()
 
 pdf("a-kk.pdf",width = 10,height = 7)
 shape(
-  x,models = 30,start = 5,end = 35,labels = FALSE,reverse = FALSE
+  x,models = 30,start = 15,end = 350,labels = FALSE,reverse = TRUE
 )
-mtext(side = 3,text = "Dades sobre el llindar",line = 2.5)
-mtext(side = 1,text = "Llindars",line = 2.5)
+mtext(side = 1,text = "Dades sobre el llindar",line = 2.5)
+mtext(side = 3,text = "Llindars",line = 2.5)
 mtext(
   side = 2,text = expression("Paràmetre de forma" ~ kappa ~ "(CI 95%)"),line =
     2.3

@@ -1,7 +1,8 @@
 source("MLE/[34]eGPD.R")
+PROB=0.05
 
 x=sort(read.table("Power law/a-words.txt")$V1);
-xmin=cvm.xmin(x,p=0.25)
+xmin=cvm.xmin(x,p=PROB)
 out=gpd(x,xmin)
 tailplot(out,col="red",labels=FALSE)
 mtext(side=1,text="x (escala log)",line=2.5)
@@ -9,7 +10,7 @@ mtext(side=2,text="1-F(x) (escala log)",line=2.3)
 
 
 x=sort(read.table("Power law/g-terrorism.txt")$V1);
-xmin=cvm.xmin(x,m=7,M=20,p=0.25)
+xmin=cvm.xmin(x,m=7,M=20,p=PROB)
 out=gpd(x,xmin)
 tailplot(out,col="red",labels=FALSE)
 mtext(side=1,text="x (escala log)",line=2.5)
@@ -17,7 +18,7 @@ mtext(side=2,text="1-F(x) (escala log)",line=2.3)
 
 
 x=sort(read.table("Power law/k-blackouts.txt")$V1);
-xmin=cvm.xmin(x,.25)
+xmin=cvm.xmin(x,p=PROB)
 out=gpd(x,xmin)
 tailplot(out,col="red",labels=FALSE)
 mtext(side=1,text="x (escala log)",line=2.5)
@@ -25,7 +26,7 @@ mtext(side=2,text="1-F(x) (escala log)",line=2.3)
 
 
 x=sort(read.table("Power law/m-cities.txt")$V1);
-xmin=cvm.xmin(x,m=1000,M=6000,dx=100,p=.25)
+xmin=cvm.xmin(x,m=1000,M=60000,dx=1000,p=PROB)
 out=gpd(x,xmin)
 tailplot(out,col="red",labels=FALSE)
 mtext(side=1,text="x (escala log)",line=2.5)
